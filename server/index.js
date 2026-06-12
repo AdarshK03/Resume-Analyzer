@@ -3,6 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
 const pdfParse = require('pdf-parse-fixed');
+const pool = require('./config/db');
 require("dotenv").config();
 
 const {GoogleGenerativeAI} = require ('@google/generative-ai');
@@ -117,9 +118,33 @@ app.post('/test', (req, res) => {
         data: req.body
     });
 });
+
+
 app.get('/', (req, res) => {
     res.send("it worked!!");
 })
+
+
+app.get('/db-test', async (req, res) => {
+    try {
+
+        const result = await pool.query(
+            'SELECT NOW()'
+        );
+
+        res.json(result.rows);
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
+
 const port = 5000;
 app.listen(port, () => {
     console.log(`server running on ${port}`);
