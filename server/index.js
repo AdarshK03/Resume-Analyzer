@@ -40,6 +40,13 @@ app.post('/upload', upload.single('resume'), async (req, res) => {
 
         let text = data.text;
 
+        
+        if (!text || text.length < 20) {
+            return res.json({
+                message: "Could not extract text. Please upload a proper resume PDF."
+            });
+        }
+
         const result = await model.generateContent(`
             Analyze this resume.
 
@@ -77,12 +84,6 @@ app.post('/upload', upload.single('resume'), async (req, res) => {
         ${text}
         `);
 
-        if (!text || text.length < 20) {
-            return res.json({
-                message: "Could not extract text. Please upload a proper resume PDF."
-            });
-        }
-
         const aiResponse = result.response.text();
 
         const cleanedResponse = aiResponse
@@ -91,6 +92,19 @@ app.post('/upload', upload.single('resume'), async (req, res) => {
             .trim();
         
         const analysis = JSON.parse(cleanedResponse);
+
+        await pool.query(
+            `
+            INSERT INTO resume_analysis
+            (file_name, total_score, analysis)
+            VALUES ($1, $2, $3)
+            `,
+            [
+                req.file.originalname,
+                analysis.totalScore,
+                JSON.stringify(analysis)
+            ]
+        );
     
         console.log(analysis);
 
@@ -144,6 +158,33 @@ app.get('/db-test', async (req, res) => {
     }
 });
 
+app.get('/analysis/:id', async(req, res) =>{
+    try{
+        const {id} = req.params;
+
+        const result = await pool.query(
+            `SELECT *
+            FROM resume_analysis
+            WHERE ID = $1`,
+            [id]
+        );
+
+        if(result.rows.length === 0){
+            return res.status(404).json({
+                message : 'that id does not exist in the database'
+            });
+        }
+
+        res.json(result.rows[0]);
+    }
+    catch(error){
+        console.log(error);
+        res.status(500).JSON({
+            message :'could not fetch analysis',
+            error : error.message
+        });
+    }
+});
 
 const port = 5000;
 app.listen(port, () => {
