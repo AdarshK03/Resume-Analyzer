@@ -5,6 +5,7 @@ const fs = require('fs');
 const pdfParse = require('pdf-parse-fixed');
 const pool = require('./config/db');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 require("dotenv").config();
 
 const {GoogleGenerativeAI} = require ('@google/generative-ai');
@@ -172,6 +173,67 @@ app.post('/register', async(req,res)=>{
             message : 'resgistration failed :(',
             error : error.message
         });
+    }
+});
+
+app.post('/login', async(req,res) =>{
+    try {
+        const {email,password} = req.body;
+
+        if( !email || !password){
+            return res.status(400).json({
+                message :'email and password required !'
+            });
+        }
+
+        const result = await pool.query(
+            `SELECT *
+            FROM users
+            WHERE email = $1`,
+            [email]
+        );
+
+        if(result.rows.length === 0){
+            return res.status(401).json({
+                message : 'invalid credentials'
+            });
+        }
+
+        const user = result.rows[0];
+
+        const isMatch = await bcrypt.compare(
+            password, user.password
+        );
+
+        if(!isMatch){
+            return res.status(401).json({
+                message : 'invalid credentials'
+            });
+        }
+
+        const token = jwt.sign(
+            {
+                userId: user.id,
+                email:user.email
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: '7d'
+            }
+        );
+
+        res.json({
+            message : 'login successful !!',
+            token
+        })
+    }
+    catch(error){
+        console.log(error);
+
+        return res.status(500).json({
+            message : 'invalid credentials',
+            error : error.message
+        })
     }
 });
 
