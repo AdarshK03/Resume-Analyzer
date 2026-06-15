@@ -1,3 +1,4 @@
+const authMiddleware = require('./middleware/authMiddleware');
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -32,7 +33,45 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.post('/upload', upload.single('resume'), async (req, res) => {
+app.get(
+    '/profile',
+    authMiddleware, (req, res) =>{
+        res.json({
+            message : 'protected route',
+            user : req.user
+        });
+    }
+);
+
+app.get(
+    '/history',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const result = await pool.query(
+                `
+                SELECT *
+                FROM resume_analysis
+                WHERE user_id = $1
+                ORDER BY created_at DESC
+                `,
+                [req.user.userId]
+            );
+
+            res.json(result.rows);
+
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                message: 'Could not fetch history',
+                error: error.message
+            });
+        }
+    }
+);
+
+app.post('/upload',authMiddleware, upload.single('resume'), async (req, res) => {
     try {
         const filePath = req.file.path;
 
@@ -98,13 +137,14 @@ app.post('/upload', upload.single('resume'), async (req, res) => {
         await pool.query(
             `
             INSERT INTO resume_analysis
-            (file_name, total_score, analysis)
-            VALUES ($1, $2, $3)
+            (file_name, total_score, analysis, user_id)
+            VALUES ($1, $2, $3, $4)
             `,
             [
                 req.file.originalname,
                 analysis.totalScore,
-                JSON.stringify(analysis)
+                JSON.stringify(analysis),
+                req.user.userId
             ]
         );
     
@@ -114,6 +154,8 @@ app.post('/upload', upload.single('resume'), async (req, res) => {
         // console.log("RAW TEXT:", text.slice(0, 300));
 
         res.json(analysis);
+
+        console.log(req.user);
 
     } catch (error) {
         console.error(error);
@@ -271,33 +313,44 @@ app.get('/db-test', async (req, res) => {
     }
 });
 
-app.get('/analysis/:id', async(req, res) =>{
-    try{
-        const {id} = req.params;
+app.get(
+    '/analysis/:id',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { id } = req.params;
 
-        const result = await pool.query(
-            `SELECT *
-            FROM resume_analysis
-            WHERE ID = $1`,
-            [id]
-        );
+            const result = await pool.query(
+                `
+                SELECT *
+                FROM resume_analysis
+                WHERE id = $1
+                AND user_id = $2
+                `,
+                [
+                    id,
+                    req.user.userId
+                ]
+            );
 
-        if(result.rows.length === 0){
-            return res.status(404).json({
-                message : 'that id does not exist in the database'
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    message: 'Analysis not found'
+                });
+            }
+
+            res.json(result.rows[0]);
+
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                message: 'Could not fetch analysis',
+                error: error.message
             });
         }
-
-        res.json(result.rows[0]);
     }
-    catch(error){
-        console.log(error);
-        res.status(500).JSON({
-            message :'could not fetch analysis',
-            error : error.message
-        });
-    }
-});
+);
 
 const port = 5000;
 app.listen(port, () => {
