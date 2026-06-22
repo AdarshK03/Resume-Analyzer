@@ -14,7 +14,7 @@ function app(){
         <Routes>
           <Route path='/' element = {<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
           <Route path='login' element ={<Login/>}/>
-          <Route path='analysis' element={<ProtectedRoute><Analysis/></ProtectedRoute>} />
+          <Route path='analysis/:id' element={<ProtectedRoute><Analysis/></ProtectedRoute>} />
           <Route path='history' element={<ProtectedRoute><History/></ProtectedRoute>} />
           <Route path='register' element={<Register/>} />
           <Route path='upload' element={<ProtectedRoute><Upload/></ProtectedRoute>} />

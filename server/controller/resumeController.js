@@ -66,11 +66,12 @@ const uploadResume = async (req, res) => {
         
         const analysis = JSON.parse(cleanedResponse);
 
-        await pool.query(
+        const dbResult = await pool.query(
             `
             INSERT INTO resume_analysis
             (file_name, total_score, analysis, user_id)
             VALUES ($1, $2, $3, $4)
+            RETURNING id
             `,
             [
                 req.file.originalname,
@@ -79,15 +80,13 @@ const uploadResume = async (req, res) => {
                 req.user.userId
             ]
         );
-    
-        console.log(analysis);
+        
+        const analysisid = dbResult.rows[0].id;
 
-        // console.log("TEXT LENGTH:", text.length);
-        // console.log("RAW TEXT:", text.slice(0, 300));
-
-        res.json(analysis);
-
-        console.log(req.user);
+        res.json({
+            id:analysisid,
+            analysis
+        });
 
     } catch (error) {
         console.error(error);

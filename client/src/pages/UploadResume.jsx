@@ -5,6 +5,9 @@ import api from '../services/api';
 function UploadResume (){
     const [file,setFile] = useState(null);
 
+    const [analysis, setAnalysis] = useState(null);
+    const navigate = useNavigate();
+
     async function handleSubmit () {
         if(!file){
             alert('please select a file !');
@@ -21,6 +24,8 @@ function UploadResume (){
             const res = await api.post('/resume/upload',formData, {headers :{Authorization : `Bearer ${token}`}});
 
             console.log(res);
+
+            navigate(`/analysis/${res.data.id}`);
         }catch(e){
             alert(e.response?.data?.message || "upload failed !");
         }
