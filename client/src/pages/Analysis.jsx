@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from '../services/api';
+import { useNavigate } from "react-router-dom";
 
 function Analysis (){
     const {id} = useParams();
-
+    const navigate = useNavigate();
     const [analysis, setanalysis] = useState(null);
 
     useEffect (()=>{
@@ -33,7 +34,6 @@ function Analysis (){
             <h1 className="text-center mt-10 text-2xl text-red-300">LOADING...</h1>
         )
     }
-    
     return(
         <>
             {
@@ -72,7 +72,8 @@ function Analysis (){
 
                         </div>
                     )
-                }    
+                }
+                <div className="flex">    
                 {
                     analysis && (
                         <div className="m-10 w-80 bg-red-300 p-5 rounded">
@@ -142,6 +143,10 @@ function Analysis (){
                             </div>
                         )
                 }
+        </div>
+        <div className="text-center">
+            <button className="bg-slate-600 text-amber-200 w-50 mb-10 rounded-xl" onClick={()=>{navigate('/history')}}>PREVIOUS RECORDS</button>
+        </div>
         </>
     );
 }
