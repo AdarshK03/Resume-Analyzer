@@ -5,6 +5,7 @@ import History from './pages/History';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Upload from './pages/UploadResume';
+import Home from './pages/Home';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function app(){
@@ -12,8 +13,9 @@ function app(){
     <>
       <BrowserRouter>
         <Routes>
-          <Route path='/' element = {<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
+          <Route path='/dashboard' element = {<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
           <Route path='login' element ={<Login/>}/>
+          <Route path='/' element ={<Home/>}/>
           <Route path='analysis/:id' element={<ProtectedRoute><Analysis/></ProtectedRoute>} />
           <Route path='history' element={<ProtectedRoute><History/></ProtectedRoute>} />
           <Route path='register' element={<Register/>} />
